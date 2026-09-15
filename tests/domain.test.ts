@@ -1,0 +1,17 @@
+import { computeStatus, completion, assignedAccountIds } from '../src/domain/status';
+import { confirmationKey, makeConfirmation } from '../src/domain/confirm';
+import { CSV_HEADERS, toCsv, utf16LeBom } from '../src/domain/csv';
+import { buildExportRows } from '../src/domain/export';
+import { PageConfig, ConfirmationRecord } from '../src/shared/types';
+
+const record = (version: number, assignmentType: 'assigned' | 'voluntary' = 'assigned'): ConfirmationRecord => ({ pageId: 'p', accountId: 'u', pageVersion: version, confirmedAt: '2026-01-01T00:00:00Z', spaceKey: 'S', assignmentType, appVersion: '1.0.0', schemaVersion: 1 });
+const config: PageConfig = { pageId: 'p', active: true, spaceKey: 'S', assignedUsers: ['u'], assignedGroups: [], dueDate: null, reconfirmOnChange: true, createdBy: 'a', createdAt: '', updatedBy: 'a', updatedAt: '' };
+
+test.each([
+  [[], 3, true, true, 'outstanding'], [[record(3)], 3, true, true, 'confirmed'], [[record(2)], 3, false, true, 'confirmed'], [[record(2)], 3, true, true, 'expired'], [[record(3)], 3, true, false, 'cannot-view']
+])('computes %s', (records, version, reconfirm, canView, expected) => expect(computeStatus({ records, currentVersion: version, reconfirmOnChange: reconfirm, canView })).toBe(expected));
+test('deleted pages are explicit and completion excludes cannot-view and voluntary', () => { expect(computeStatus({ records: [], currentVersion: 1, reconfirmOnChange: false, canView: true, pageDeleted: true })).toBe('page-deleted'); expect(completion([{ status: 'confirmed', assignmentType: 'assigned' }, { status: 'cannot-view', assignmentType: 'assigned' }, { status: 'confirmed', assignmentType: 'voluntary' }])).toEqual({ confirmed: 1, denominator: 1, percent: 1 }); });
+test('group membership is read-time and deduplicated', () => expect(assignedAccountIds({ ...config, assignedUsers: ['u'], assignedGroups: ['g'] }, { g: ['u', 'v'] })).toEqual(['u', 'v']));
+test('confirmation keys use Forge-safe collision-resistant encoding and version drift refuses write', () => { const key = confirmationKey('p#1', 'u#2', 3); expect(key).not.toContain('%'); expect(key).toMatch(/^confirm#[0-9a-f]+#[0-9a-f]+#3$/); expect(makeConfirmation({ pageId: 'p', accountId: 'u', serverPageVersion: 4, clientPageVersion: 3, spaceKey: 'S', confirmedAt: '', assignmentType: 'assigned', appVersion: '1' })).toEqual({ pageChanged: true }); });
+test('CSV is tab-delimited and UTF-16LE BOM encoded', () => { const csv = toCsv([{ pageTitle: 'Ayşe, policy', pageId: 'p', spaceKey: 'S', pageVersionConfirmed: '', userDisplayName: 'Gökhan', userAccountId: 'u', assignmentType: 'assigned', status: 'outstanding', confirmedAtUtc: '', dueDate: '', exportedAtUtc: '2026-01-01T00:00:00Z', appVersion: '1' }]); expect(csv.split('\r\n')[0].split('\t')).toEqual(CSV_HEADERS); expect(csv).toContain('Ayşe, policy'); expect(utf16LeBom(csv).slice(0, 2)).toEqual(new Uint8Array([255, 254])); });
+test('export includes outstanding and voluntary rows, with deleted placeholder', () => { const rows = buildExportRows([{ id: 'p', title: 'Policy', spaceKey: 'S', currentVersion: 2 }, { id: 'd', title: 'gone', spaceKey: 'S', currentVersion: 1, deleted: true }], [config, { ...config, pageId: 'd', assignedUsers: [] }], [record(2), { ...record(1, 'voluntary'), pageId: 'd' }], [{ accountId: 'u', displayName: 'User', canView: true }], { scope: 'site' }, '2026-01-01T00:00:00Z', '1'); expect(rows.some((row) => row.status === 'confirmed')).toBe(true); expect(rows.some((row) => row.pageTitle === '[deleted page d]')).toBe(true); });

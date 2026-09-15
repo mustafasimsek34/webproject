@@ -1,0 +1,3 @@
+export interface Settings { complianceManagerUserIds: string[]; complianceManagerGroupIds: string[]; }
+const defaults: Settings = { complianceManagerUserIds: [], complianceManagerGroupIds: [] };
+export class SettingsStore { private value = { ...defaults }; async get() { return { ...this.value, complianceManagerUserIds: [...this.value.complianceManagerUserIds], complianceManagerGroupIds: [...this.value.complianceManagerGroupIds] }; } async save(value: Settings) { this.value = { ...value, complianceManagerUserIds: [...value.complianceManagerUserIds], complianceManagerGroupIds: [...value.complianceManagerGroupIds] }; } }

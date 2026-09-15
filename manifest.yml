@@ -1,0 +1,128 @@
+modules:
+  macro:
+    - key: acknowledge-macro
+      resource: macro
+      render: native
+      resolver: { function: resolver }
+      title: Read confirmation
+  confluence:contentBylineItem:
+    - key: acknowledge-byline
+      resource: byline
+      render: native
+      title: Read confirmation
+      dynamicProperties: { function: bylineProps }
+  confluence:globalPage:
+    - key: acknowledge-dashboard
+      resource: dashboard
+      render: native
+      resolver: { function: resolver }
+      route: read-confirmations
+      title: Read confirmations
+    - key: acknowledge-export
+      resource: export-ui
+      resolver: { function: resolver }
+      route: read-confirmations-export
+      title: Export read confirmations
+  confluence:globalSettings:
+    - key: acknowledge-settings
+      resource: settings
+      render: native
+      resolver: { function: resolver }
+      title: Read Confirmation
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: bylineProps
+      handler: index.bylineProps
+resources:
+  - key: macro
+    path: src/frontend/macro.tsx
+  - key: byline
+    path: src/frontend/byline.tsx
+  - key: dashboard
+    path: src/frontend/dashboard.tsx
+  - key: settings
+    path: src/frontend/settings.tsx
+  - key: export-ui
+    path: static/export-ui/build
+app:
+  runtime:
+    name: nodejs22.x
+  storage:
+    entities:
+      - name: confirmation
+        attributes:
+          pageId:
+            type: string
+          accountId:
+            type: string
+          pageVersion:
+            type: integer
+          confirmedAt:
+            type: string
+          spaceKey:
+            type: string
+          payload:
+            type: string
+        indexes:
+          - name: by-page
+            partition:
+              - pageId
+            range:
+              - confirmedAt
+          - name: by-user
+            partition:
+              - accountId
+            range:
+              - confirmedAt
+          - name: by-page-user
+            partition:
+              - pageId
+              - accountId
+            range:
+              - pageVersion
+      - name: page-config
+        attributes:
+          pageId:
+            type: string
+          active:
+            type: boolean
+          spaceKey:
+            type: string
+          payload:
+            type: string
+        indexes:
+          - name: tracked
+            partition:
+              - active
+            range:
+              - spaceKey
+      - name: settings
+        attributes:
+          key:
+            type: string
+          payload:
+            type: string
+      - name: config-audit
+        attributes:
+          pageId:
+            type: string
+          timestamp:
+            type: string
+          payload:
+            type: string
+        indexes:
+          - name: by-page
+            partition:
+              - pageId
+            range:
+              - timestamp
+  id: ari:cloud:ecosystem::app/f5553258-853d-4f34-b6fa-fe8c0beacdfd
+permissions:
+  scopes:
+    - storage:app
+    - read:page:confluence
+    - read:user:confluence
+    - read:group:confluence
+    - read:content.permission:confluence
+    - read:content-details:confluence

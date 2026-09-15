@@ -1,0 +1,36 @@
+{
+  "name": "attestly-confluence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Attestly read confirmations for Confluence Cloud",
+  "scripts": {
+    "test": "jest --passWithNoTests --runInBand",
+    "test:coverage": "jest --coverage --runInBand",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format:check": "prettier --check .",
+    "build": "npm run build:export",
+    "build:export": "npm --prefix static/export-ui install --ignore-scripts && npm --prefix static/export-ui run build",
+    "forge:lint": "forge lint --non-interactive",
+    "scope-snapshot": "node scripts/check-manifest.js",
+    "zero-webtrigger": "node scripts/check-manifest.js --zero-webtrigger"
+  },
+  "dependencies": {
+    "@forge/api": "^5.0.0",
+    "@forge/bridge": "^5.0.0",
+    "@forge/kvs": "^1.0.0",
+    "@forge/react": "^11.0.0",
+    "@forge/resolver": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.0"
+  }
+}

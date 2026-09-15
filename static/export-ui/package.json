@@ -1,0 +1,1 @@
+{"private":true,"scripts":{"build":"vite build"},"devDependencies":{"@vitejs/plugin-react":"latest","typescript":"latest","vite":"latest"},"dependencies":{"@forge/bridge":"latest","react":"^18.3.0","react-dom":"^18.3.0"}}
